@@ -35,7 +35,14 @@ public class AvroApicurioFormatOptions {
                     .withFallbackKeys("schema-registry.url")
                     .withDescription(
                             "The URL of the Apicurio Schema Registry to fetch/register schemas.");
-
+    /*
+    Apicurio Registry URL
+     Artifact resolver strategy - default or provided ?
+      ID location
+      encoding
+      Avro datum provider
+      Avro encoding
+     */
     public static final ConfigOption<String> SUBJECT =
             ConfigOptions.key("subject")
                     .stringType()
@@ -76,6 +83,11 @@ public class AvroApicurioFormatOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("Password for SSL keystore");
+    public static final ConfigOption<String> SSL_KEYSTORE_TYPE =
+            ConfigOptions.key("ssl.keystore.type")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("Type for SSL truststore");
 
     public static final ConfigOption<String> SSL_TRUSTSTORE_LOCATION =
             ConfigOptions.key("ssl.truststore.location")
@@ -88,6 +100,12 @@ public class AvroApicurioFormatOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("Password for SSL truststore");
+
+    public static final ConfigOption<String> SSL_TRUSTSTORE_TYPE =
+            ConfigOptions.key("ssl.truststore.type")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("Type for SSL truststore");
 
     public static final ConfigOption<String> BASIC_AUTH_CREDENTIALS_SOURCE =
             ConfigOptions.key("basic-auth.credentials-source")
@@ -112,6 +130,26 @@ public class AvroApicurioFormatOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("Bearer auth token for Schema Registry");
+
+    // --------------------------------------------------------------------------------------------
+    // Apicurio token security settings
+    // --------------------------------------------------------------------------------------------
+    public static final ConfigOption<String> AUTH_TOKEN_ENDPOINT =
+            ConfigOptions.key("auth.token-endpoint")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("Auth token endpoint");
+
+    public static final ConfigOption<String> AUTH_CLIENT_ID =
+            ConfigOptions.key("auth.client-id")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("Auth client id");
+    public static final ConfigOption<String> AUTH_CLIENT_SECRET =
+            ConfigOptions.key("auth.client-secret")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("Auth client secret");
 
     // --------------------------------------------------------------------------------------------
     // Fallback properties

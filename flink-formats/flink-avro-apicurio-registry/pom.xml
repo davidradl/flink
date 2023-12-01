@@ -38,14 +38,6 @@ under the License.
 		<apicurio-registry.version>2.5.0.Final</apicurio-registry.version>
 	</properties>
 
-	<repositories>
-		<repository>
-			<id>apicurio</id>
-			<!-- TODO confirm url is correct -->
-			<url>https://mvnrepository.com/artifact/io.apicurio</url>
-		</repository>
-	</repositories>
-
 	<dependencies>
 		<dependency>
 			<groupId>io.apicurio</groupId>

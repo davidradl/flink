@@ -60,6 +60,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BASIC_AUTH_CREDENTIALS_SOURCE;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BASIC_AUTH_USER_INFO;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BEARER_AUTH_CREDENTIALS_SOURCE;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BEARER_AUTH_TOKEN;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.PROPERTIES;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SCHEMA;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_KEYSTORE_LOCATION;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_KEYSTORE_PASSWORD;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_TRUSTSTORE_LOCATION;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_TRUSTSTORE_PASSWORD;
+import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SUBJECT;
 import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.URL;
 
 /**

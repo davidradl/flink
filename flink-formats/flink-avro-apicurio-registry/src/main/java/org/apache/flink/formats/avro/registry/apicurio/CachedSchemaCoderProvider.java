@@ -21,8 +21,16 @@ package org.apache.flink.formats.avro.registry.apicurio;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.formats.avro.SchemaCoder;
 
+import io.apicurio.registry.rest.client.RegistryClient;
+import io.apicurio.registry.rest.client.RegistryClientFactory;
+import io.apicurio.rest.client.JdkHttpClientProvider;
+import io.apicurio.rest.client.auth.OidcAuth;
+import io.apicurio.rest.client.auth.exception.AuthErrorHandler;
+import io.apicurio.rest.client.spi.ApicurioHttpClient;
+
 import javax.annotation.Nullable;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
@@ -36,7 +44,7 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
     private final String subject;
     private final String url;
     private final int identityMapCapacity;
-    private final @Nullable Map<String, ?> registryConfigs;
+    private final @Nullable Map<String, Object> registryConfigs;
 
     private final RegistryClient registryClient;
 
@@ -48,15 +56,34 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
             @Nullable String subject,
             String url,
             int identityMapCapacity,
-            @Nullable Map<String, ?> registryConfigs) {
+            @Nullable Map<String, Object> registryConfigs) {
         this.subject = subject;
         this.url = Objects.requireNonNull(url);
         this.identityMapCapacity = identityMapCapacity;
         this.registryConfigs = registryConfigs;
-        // TODO get from above
+        this.registryClient = createProperClient(url);
+    }
 
-        String registryUrl = "https://my-registry.my-domain.com/apis/registry/v2";
-        RegistryClientFactory.create(registryUrl);
+    private RegistryClient createProperClient(String registryUrl) {
+        RegistryClientFactory.setProvider(new JdkHttpClientProvider());
+
+        final String tokenEndpoint = System.getenv("AUTH_TOKEN_ENDPOINT");
+        if (tokenEndpoint != null) {
+            final String authClient = System.getenv("AUTH_CLIENT_ID");
+            final String authSecret = System.getenv("AUTH_CLIENT_SECRET");
+            ApicurioHttpClient httpClient =
+                    new JdkHttpClientProvider()
+                            .create(
+                                    tokenEndpoint,
+                                    Collections.emptyMap(),
+                                    null,
+                                    new AuthErrorHandler());
+            return RegistryClientFactory.create(
+                    registryUrl, registryConfigs, new OidcAuth(httpClient, authClient, authSecret));
+        } else {
+            // TODO does identityMapCapacity have an equivalent ?
+            return RegistryClientFactory.create(registryUrl, registryConfigs);
+        }
     }
 
     @Override
@@ -66,12 +93,7 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
         //                new CachedSchemaRegistryClient(url, identityMapCapacity,
         // registryConfigs));
 
-        return new ApicurioSchemaRegistryCoder(
-                                this.subject,
-                                registryClient);
-
-
-        return null;
+        return new ApicurioSchemaRegistryCoder(this.subject, registryClient);
     }
 
     @Override
@@ -79,18 +101,20 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
         if (this == o) {
             return true;
         }
-        //        if (o == null || getClass() != o.getClass()) {
-        //            return false;
-        //        }
-        //        CachedSchemaCoderProvider that = (CachedSchemaCoderProvider) o;
-        //        return identityMapCapacity == that.identityMapCapacity
-        //                && Objects.equals(subject, that.subject)
-        //                && url.equals(that.url)
-        //                && Objects.equals(registryConfigs, that.registryConfigs);
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        // TODO COMPARE REGISTRY CLIENT
+        CachedSchemaCoderProvider that = (CachedSchemaCoderProvider) o;
+        return identityMapCapacity == that.identityMapCapacity
+                && Objects.equals(subject, that.subject)
+                && url.equals(that.url)
+                && Objects.equals(registryConfigs, that.registryConfigs);
     }
 
     @Override
     public int hashCode() {
+        // TODO  REGISTRY CLIENT hash
         return Objects.hash(subject, url, identityMapCapacity, registryConfigs);
     }
 }

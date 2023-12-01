@@ -21,16 +21,12 @@ package org.apache.flink.formats.avro.registry.apicurio;
 import org.apache.flink.formats.avro.SchemaCoder;
 
 import io.apicurio.registry.rest.client.RegistryClient;
-import io.apicurio.registry.rest.client.RegistryClientFactory;
 import org.apache.avro.Schema;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-
-import static java.lang.String.format;
 
 /** Reads and Writes schema using Confluent Schema Registry protocol. */
 public class ApicurioSchemaRegistryCoder implements SchemaCoder {
@@ -64,8 +60,16 @@ public class ApicurioSchemaRegistryCoder implements SchemaCoder {
     @Override
     public Schema readSchema(InputStream in) throws IOException {
         DataInputStream dataInputStream = new DataInputStream(in);
-        // TODO need to look at the options to see what we expect, magic byte, header info or
-        //  something else.
+        /*
+         * There are 3 types of event that we can accept. We are looking for the artifact id to use to look up
+         * the schema. This id can be in one of 3 places
+         * 1) in the message payload as a content id
+         * 2) in the message payload as a global id
+         * 3) in a header
+         *
+         * The code in Apicurio (AbstractKafkaDeserializer deserilise) honours the payload content then check for header content.
+         *
+         */
 
         // Read in the stream as is to get the schema
 
@@ -75,39 +79,40 @@ public class ApicurioSchemaRegistryCoder implements SchemaCoder {
 
         // We need the schema from the group id - so we can look it up in the schema registry
 
-
         // if MAGIC byte
-//        if (dataInputStream.readByte() != 0) {
-//            throw new IOException("Unknown data format. Magic number does not match");
-//        } else {
-//            int schemaId = dataInputStream.readInt();
-//
-//            try {
-//               // return this.schemaRegistryClient.getById(schemaId);
-//                GroupMetaData groupMetaData = this.registryClient.getArtifactGroupId(groupId);
-////                groupMetaData.
-//                // TODO how do we return the Avro schema?
-//                return null;
-//
-//
-//            } catch (RestClientException e) {
-//                throw new IOException(
-//                        format("Could not find schema with id %s in registry", schemaId), e);
-//            }
-//        }
+        //        if (dataInputStream.readByte() != 0) {
+        //            throw new IOException("Unknown data format. Magic number does not match");
+        //        } else {
+        //            int schemaId = dataInputStream.readInt();
+        //
+        //            try {
+        //               // return this.schemaRegistryClient.getById(schemaId);
+        //                GroupMetaData groupMetaData =
+        // this.registryClient.getArtifactGroupId(groupId);
+        ////                groupMetaData.
+        //                // TODO how do we return the Avro schema?
+        //                return null;
+        //
+        //
+        //            } catch (RestClientException e) {
+        //                throw new IOException(
+        //                        format("Could not find schema with id %s in registry", schemaId),
+        // e);
+        //            }
+        //        }
         return null;
     }
 
     @Override
     public void writeSchema(Schema schema, OutputStream out) throws IOException {
-        //TODO write equivalent schema for Apicurio using group id.
-//        try {
-//            int registeredId = registryClient.register(subject, schema);
-//            out.write(CONFLUENT_MAGIC_BYTE);
-//            byte[] schemaIdBytes = ByteBuffer.allocate(4).putInt(registeredId).array();
-//            out.write(schemaIdBytes);
-//        } catch (RestClientException e) {
-//            throw new IOException("Could not register schema in registry", e);
-//        }
+        // TODO write equivalent schema for Apicurio using group id.
+        //        try {
+        //            int registeredId = registryClient.register(subject, schema);
+        //            out.write(CONFLUENT_MAGIC_BYTE);
+        //            byte[] schemaIdBytes = ByteBuffer.allocate(4).putInt(registeredId).array();
+        //            out.write(schemaIdBytes);
+        //        } catch (RestClientException e) {
+        //            throw new IOException("Could not register schema in registry", e);
+        //        }
     }
 }
