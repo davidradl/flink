@@ -35,7 +35,7 @@ under the License.
 		<kafka.version>3.2.3</kafka.version>
 		<!-- TODO review the Apicurio release and backwards compatible -->
 		<!-- need the fix that allows inlined nested schema -->
-		<apicurio-registry.version>2.5.0.Final</apicurio-registry.version>
+		<apicurio-registry.version>2.4.1.Final</apicurio-registry.version>
 	</properties>
 
 	<dependencies>

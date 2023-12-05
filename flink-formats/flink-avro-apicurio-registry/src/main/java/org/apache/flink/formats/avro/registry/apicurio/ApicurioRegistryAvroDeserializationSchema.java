@@ -105,7 +105,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
      * @return deserialized record in form of {@link GenericRecord}
      */
     public static ApicurioRegistryAvroDeserializationSchema<GenericRecord> forGeneric(
-            Schema schema, String url, @Nullable Map<String, ?> registryConfigs) {
+            Schema schema, String url, @Nullable Map<String, Object> registryConfigs) {
         return forGeneric(schema, url, DEFAULT_IDENTITY_MAP_CAPACITY, registryConfigs);
     }
 
@@ -125,7 +125,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
             Schema schema,
             String url,
             int identityMapCapacity,
-            @Nullable Map<String, ?> registryConfigs) {
+            @Nullable Map<String, Object> registryConfigs) {
         return new ApicurioRegistryAvroDeserializationSchema<>(
                 GenericRecord.class,
                 schema,
@@ -176,7 +176,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
      */
     public static <T extends SpecificRecord>
             ApicurioRegistryAvroDeserializationSchema<T> forSpecific(
-                    Class<T> tClass, String url, @Nullable Map<String, ?> registryConfigs) {
+                    Class<T> tClass, String url, @Nullable Map<String, Object> registryConfigs) {
         return forSpecific(tClass, url, DEFAULT_IDENTITY_MAP_CAPACITY, registryConfigs);
     }
 
@@ -196,7 +196,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
                     Class<T> tClass,
                     String url,
                     int identityMapCapacity,
-                    @Nullable Map<String, ?> registryConfigs) {
+                    @Nullable Map<String, Object> registryConfigs) {
         return new ApicurioRegistryAvroDeserializationSchema<>(
                 tClass,
                 null,

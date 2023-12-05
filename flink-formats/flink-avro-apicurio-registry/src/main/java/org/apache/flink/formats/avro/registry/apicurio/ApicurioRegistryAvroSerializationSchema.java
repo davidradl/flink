@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 /**
- * Serialization schema that serializes to Avro binary format that uses Confluent Schema Registry.
+ * Serialization schema that serializes to Avro binary format that uses Apicurio Schema Registry.
  *
  * @param <T> the type to be serialized
  */
@@ -87,7 +87,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
             Class<T> tClass,
             String subject,
             String schemaRegistryUrl,
-            @Nullable Map<String, ?> registryConfigs) {
+            @Nullable Map<String, Object> registryConfigs) {
         return new ApicurioRegistryAvroSerializationSchema<>(
                 tClass,
                 null,
@@ -127,7 +127,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
             String subject,
             Schema schema,
             String schemaRegistryUrl,
-            @Nullable Map<String, ?> registryConfigs) {
+            @Nullable Map<String, Object> registryConfigs) {
         return new ApicurioRegistryAvroSerializationSchema<>(
                 GenericRecord.class,
                 schema,

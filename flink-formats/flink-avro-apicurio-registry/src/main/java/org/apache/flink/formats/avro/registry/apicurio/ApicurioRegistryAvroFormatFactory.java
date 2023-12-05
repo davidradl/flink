@@ -60,25 +60,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BASIC_AUTH_CREDENTIALS_SOURCE;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BASIC_AUTH_USER_INFO;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BEARER_AUTH_CREDENTIALS_SOURCE;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.BEARER_AUTH_TOKEN;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.PROPERTIES;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SCHEMA;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_KEYSTORE_LOCATION;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_KEYSTORE_PASSWORD;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_TRUSTSTORE_LOCATION;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SSL_TRUSTSTORE_PASSWORD;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.SUBJECT;
-import static org.apache.flink.formats.avro.registry.apicurio.AvroApicurioFormatOptions.URL;
 
 /**
  * Table format factory for providing configured instances of Schema Registry Avro to RowData {@link
  * SerializationSchema} and {@link DeserializationSchema}.
  */
 @Internal
-public class RegistryAvroFormatFactory
+public class ApicurioRegistryAvroFormatFactory
         implements DeserializationFormatFactory, SerializationFormatFactory {
 
     public static final String IDENTIFIER = "avro-apicurio";
@@ -88,9 +76,9 @@ public class RegistryAvroFormatFactory
             DynamicTableFactory.Context context, ReadableConfig formatOptions) {
         FactoryUtil.validateFactoryOptions(this, formatOptions);
 
-        String schemaRegistryURL = formatOptions.get(URL);
-        Optional<String> schemaString = formatOptions.getOptional(SCHEMA);
-        Map<String, ?> optionalPropertiesMap = buildOptionalPropertiesMap(formatOptions);
+        String schemaRegistryURL = formatOptions.get(AvroApicurioFormatOptions.URL);
+        Optional<String> schemaString = formatOptions.getOptional(AvroApicurioFormatOptions.SCHEMA);
+        Map<String, Object> optionalPropertiesMap = buildOptionalPropertiesMap(formatOptions);
 
         return new ProjectableDecodingFormat<DeserializationSchema<RowData>>() {
             @Override
@@ -125,16 +113,16 @@ public class RegistryAvroFormatFactory
             DynamicTableFactory.Context context, ReadableConfig formatOptions) {
         FactoryUtil.validateFactoryOptions(this, formatOptions);
 
-        String schemaRegistryURL = formatOptions.get(URL);
-        Optional<String> subject = formatOptions.getOptional(SUBJECT);
-        Optional<String> schemaString = formatOptions.getOptional(SCHEMA);
-        Map<String, ?> optionalPropertiesMap = buildOptionalPropertiesMap(formatOptions);
+        String schemaRegistryURL = formatOptions.get(AvroApicurioFormatOptions.URL);
+        Optional<String> subject = formatOptions.getOptional(AvroApicurioFormatOptions.SUBJECT);
+        Optional<String> schemaString = formatOptions.getOptional(AvroApicurioFormatOptions.SCHEMA);
+        Map<String, Object> optionalPropertiesMap = buildOptionalPropertiesMap(formatOptions);
 
         if (!subject.isPresent()) {
             throw new ValidationException(
                     String.format(
                             "Option %s.%s is required for serialization",
-                            IDENTIFIER, SUBJECT.key()));
+                            IDENTIFIER, AvroApicurioFormatOptions.SUBJECT.key()));
         }
 
         return new EncodingFormat<SerializationSchema<RowData>>() {
@@ -146,10 +134,20 @@ public class RegistryAvroFormatFactory
                         schemaString
                                 .map(s -> getAvroSchema(s, rowType))
                                 .orElse(AvroSchemaConverter.convertToSchema(rowType));
+                Map<String, Object> optionalPropertiesMapObjectValue = new HashMap<>();
+                // the constructor below expects a Map<String, Object> not a Map<String, String>
+                for (String key : optionalPropertiesMap.keySet()) {
+                    optionalPropertiesMapObjectValue.put(
+                            key, optionalPropertiesMapObjectValue.get(key));
+                }
+
                 return new AvroRowDataSerializationSchema(
                         rowType,
                         ApicurioRegistryAvroSerializationSchema.forGeneric(
-                                subject.get(), schema, schemaRegistryURL, optionalPropertiesMap),
+                                subject.get(),
+                                schema,
+                                schemaRegistryURL,
+                                optionalPropertiesMapObjectValue),
                         RowDataToAvroConverters.createConverter(rowType));
             }
 
@@ -168,61 +166,63 @@ public class RegistryAvroFormatFactory
     @Override
     public Set<ConfigOption<?>> requiredOptions() {
         Set<ConfigOption<?>> options = new HashSet<>();
-        options.add(URL);
+        options.add(AvroApicurioFormatOptions.URL);
         return options;
     }
 
     @Override
     public Set<ConfigOption<?>> optionalOptions() {
         Set<ConfigOption<?>> options = new HashSet<>();
-        options.add(SUBJECT);
-        options.add(SCHEMA);
-        options.add(PROPERTIES);
-        options.add(SSL_KEYSTORE_LOCATION);
-        options.add(SSL_KEYSTORE_PASSWORD);
-        options.add(SSL_TRUSTSTORE_LOCATION);
-        options.add(SSL_TRUSTSTORE_PASSWORD);
-        options.add(BASIC_AUTH_CREDENTIALS_SOURCE);
-        options.add(BASIC_AUTH_USER_INFO);
-        options.add(BEARER_AUTH_CREDENTIALS_SOURCE);
-        options.add(BEARER_AUTH_TOKEN);
+        options.add(AvroApicurioFormatOptions.SUBJECT);
+        options.add(AvroApicurioFormatOptions.SCHEMA);
+        options.add(AvroApicurioFormatOptions.PROPERTIES);
+        options.add(AvroApicurioFormatOptions.SSL_KEYSTORE_LOCATION);
+        options.add(AvroApicurioFormatOptions.SSL_KEYSTORE_PASSWORD);
+        options.add(AvroApicurioFormatOptions.SSL_TRUSTSTORE_LOCATION);
+        options.add(AvroApicurioFormatOptions.SSL_TRUSTSTORE_PASSWORD);
+        options.add(AvroApicurioFormatOptions.BASIC_AUTH_CREDENTIALS_SOURCE);
+        options.add(AvroApicurioFormatOptions.BASIC_AUTH_USER_INFO);
+        options.add(AvroApicurioFormatOptions.BEARER_AUTH_CREDENTIALS_SOURCE);
+        options.add(AvroApicurioFormatOptions.BEARER_AUTH_TOKEN);
         return options;
     }
 
     @Override
     public Set<ConfigOption<?>> forwardOptions() {
-        return Stream.of(URL).collect(Collectors.toSet());
+        return Stream.of(AvroApicurioFormatOptions.URL).collect(Collectors.toSet());
     }
 
-    public static @Nullable Map<String, String> buildOptionalPropertiesMap(
+    public static @Nullable Map<String, Object> buildOptionalPropertiesMap(
             ReadableConfig formatOptions) {
-        final Map<String, String> properties = new HashMap<>();
-
-        formatOptions.getOptional(PROPERTIES).ifPresent(properties::putAll);
+        final Map<String, Object> properties = new HashMap<>();
 
         formatOptions
-                .getOptional(SSL_KEYSTORE_LOCATION)
+                .getOptional(AvroApicurioFormatOptions.PROPERTIES)
+                .ifPresent(properties::putAll);
+
+        formatOptions
+                .getOptional(AvroApicurioFormatOptions.SSL_KEYSTORE_LOCATION)
                 .ifPresent(v -> properties.put("schema.registry.ssl.keystore.location", v));
         formatOptions
-                .getOptional(SSL_KEYSTORE_PASSWORD)
+                .getOptional(AvroApicurioFormatOptions.SSL_KEYSTORE_PASSWORD)
                 .ifPresent(v -> properties.put("schema.registry.ssl.keystore.password", v));
         formatOptions
-                .getOptional(SSL_TRUSTSTORE_LOCATION)
+                .getOptional(AvroApicurioFormatOptions.SSL_TRUSTSTORE_LOCATION)
                 .ifPresent(v -> properties.put("schema.registry.ssl.truststore.location", v));
         formatOptions
-                .getOptional(SSL_TRUSTSTORE_PASSWORD)
+                .getOptional(AvroApicurioFormatOptions.SSL_TRUSTSTORE_PASSWORD)
                 .ifPresent(v -> properties.put("schema.registry.ssl.truststore.password", v));
         formatOptions
-                .getOptional(BASIC_AUTH_CREDENTIALS_SOURCE)
+                .getOptional(AvroApicurioFormatOptions.BASIC_AUTH_CREDENTIALS_SOURCE)
                 .ifPresent(v -> properties.put("basic.auth.credentials.source", v));
         formatOptions
-                .getOptional(BASIC_AUTH_USER_INFO)
+                .getOptional(AvroApicurioFormatOptions.BASIC_AUTH_USER_INFO)
                 .ifPresent(v -> properties.put("basic.auth.user.info", v));
         formatOptions
-                .getOptional(BEARER_AUTH_CREDENTIALS_SOURCE)
+                .getOptional(AvroApicurioFormatOptions.BEARER_AUTH_CREDENTIALS_SOURCE)
                 .ifPresent(v -> properties.put("bearer.auth.credentials.source", v));
         formatOptions
-                .getOptional(BEARER_AUTH_TOKEN)
+                .getOptional(AvroApicurioFormatOptions.BEARER_AUTH_TOKEN)
                 .ifPresent(v -> properties.put("bearer.auth.token", v));
 
         if (properties.isEmpty()) {
