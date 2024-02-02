@@ -78,7 +78,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
 
     /**
      * Creates {@link ApicurioRegistryAvroDeserializationSchema} that produces {@link GenericRecord}
-     * using the provided reader schema and looks up the writer schema in the apicurio Schema
+     * using the provided reader schema and looks up the writer schema in the Apicurio Schema
      * Registry.
      *
      * @param schema schema of produced records
@@ -93,7 +93,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
 
     /**
      * Creates {@link ApicurioRegistryAvroDeserializationSchema} that produces {@link GenericRecord}
-     * using the provided reader schema and looks up the writer schema in the apicurio Schema
+     * using the provided reader schema and looks up the writer schema in the Apicurio Schema
      * Registry.
      *
      * <p>By default, this method supports up to 1000 cached schema versions.
@@ -105,13 +105,13 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
      * @return deserialized record in form of {@link GenericRecord}
      */
     public static ApicurioRegistryAvroDeserializationSchema<GenericRecord> forGeneric(
-            Schema schema, String url, @Nullable Map<String, Object> registryConfigs) {
+            Schema schema, String url, @Nullable Map<String, ?> registryConfigs) {
         return forGeneric(schema, url, DEFAULT_IDENTITY_MAP_CAPACITY, registryConfigs);
     }
 
     /**
      * Creates {@link ApicurioRegistryAvroDeserializationSchema} that produces {@link GenericRecord}
-     * using the provided reader schema and looks up the writer schema in the apicurio Schema
+     * using the provided reader schema and looks up the writer schema in the Apicurio Schema
      * Registry.
      *
      * @param schema schema of produced records
@@ -125,7 +125,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
             Schema schema,
             String url,
             int identityMapCapacity,
-            @Nullable Map<String, Object> registryConfigs) {
+            @Nullable Map<String, ?> registryConfigs) {
         return new ApicurioRegistryAvroDeserializationSchema<>(
                 GenericRecord.class,
                 schema,
@@ -134,7 +134,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
 
     /**
      * Creates {@link AvroDeserializationSchema} that produces classes that were generated from Avro
-     * schema and looks up the writer schema in the apicurio Schema Registry.
+     * schema and looks up the writer schema in the Apicurio Schema Registry.
      *
      * <p>By default, this method supports up to 1000 cached schema versions.
      *
@@ -149,7 +149,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
 
     /**
      * Creates {@link AvroDeserializationSchema} that produces classes that were generated from Avro
-     * schema and looks up the writer schema in the apicurio Schema Registry.
+     * schema and looks up the writer schema in the Apicurio Schema Registry.
      *
      * @param tClass class of record to be produced
      * @param url url of schema registry to connect
@@ -164,7 +164,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
 
     /**
      * Creates {@link AvroDeserializationSchema} that produces classes that were generated from Avro
-     * schema and looks up the writer schema in the apicurio Schema Registry.
+     * schema and looks up the writer schema in the Apicurio Schema Registry.
      *
      * <p>By default, this method supports up to 1000 cached schema versions.
      *
@@ -176,13 +176,13 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
      */
     public static <T extends SpecificRecord>
             ApicurioRegistryAvroDeserializationSchema<T> forSpecific(
-                    Class<T> tClass, String url, @Nullable Map<String, Object> registryConfigs) {
+                    Class<T> tClass, String url, @Nullable Map<String, ?> registryConfigs) {
         return forSpecific(tClass, url, DEFAULT_IDENTITY_MAP_CAPACITY, registryConfigs);
     }
 
     /**
      * Creates {@link AvroDeserializationSchema} that produces classes that were generated from Avro
-     * schema and looks up the writer schema in the apicurio Schema Registry.
+     * schema and looks up the writer schema in the Apicurio Schema Registry.
      *
      * @param tClass class of record to be produced
      * @param url URL of schema registry to connect
@@ -196,7 +196,7 @@ public class ApicurioRegistryAvroDeserializationSchema<T>
                     Class<T> tClass,
                     String url,
                     int identityMapCapacity,
-                    @Nullable Map<String, Object> registryConfigs) {
+                    @Nullable Map<String, ?> registryConfigs) {
         return new ApicurioRegistryAvroDeserializationSchema<>(
                 tClass,
                 null,

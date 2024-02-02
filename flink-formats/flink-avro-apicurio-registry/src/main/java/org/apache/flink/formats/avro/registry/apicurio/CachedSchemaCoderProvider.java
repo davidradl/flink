@@ -23,14 +23,9 @@ import org.apache.flink.formats.avro.SchemaCoder;
 
 import io.apicurio.registry.rest.client.RegistryClient;
 import io.apicurio.registry.rest.client.RegistryClientFactory;
-import io.apicurio.rest.client.JdkHttpClientProvider;
-import io.apicurio.rest.client.auth.OidcAuth;
-import io.apicurio.rest.client.auth.exception.AuthErrorHandler;
-import io.apicurio.rest.client.spi.ApicurioHttpClient;
 
 import javax.annotation.Nullable;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
@@ -44,9 +39,7 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
     private final String subject;
     private final String url;
     private final int identityMapCapacity;
-    private final @Nullable Map<String, Object> registryConfigs;
-
-    private final RegistryClient registryClient;
+    private final @Nullable Map<String, ?> registryConfigs;
 
     CachedSchemaCoderProvider(String url, int identityMapCapacity) {
         this(null, url, identityMapCapacity, null);
@@ -56,44 +49,42 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
             @Nullable String subject,
             String url,
             int identityMapCapacity,
-            @Nullable Map<String, Object> registryConfigs) {
+            @Nullable Map<String, ?> registryConfigs) {
         this.subject = subject;
         this.url = Objects.requireNonNull(url);
+        // TODO this does not seem to be used for Apicurio
         this.identityMapCapacity = identityMapCapacity;
         this.registryConfigs = registryConfigs;
-        this.registryClient = createProperClient(url);
     }
 
-    private RegistryClient createProperClient(String registryUrl) {
-        RegistryClientFactory.setProvider(new JdkHttpClientProvider());
-
-        final String tokenEndpoint = System.getenv("AUTH_TOKEN_ENDPOINT");
-        if (tokenEndpoint != null) {
-            final String authClient = System.getenv("AUTH_CLIENT_ID");
-            final String authSecret = System.getenv("AUTH_CLIENT_SECRET");
-            ApicurioHttpClient httpClient =
-                    new JdkHttpClientProvider()
-                            .create(
-                                    tokenEndpoint,
-                                    Collections.emptyMap(),
-                                    null,
-                                    new AuthErrorHandler());
-            return RegistryClientFactory.create(
-                    registryUrl, registryConfigs, new OidcAuth(httpClient, authClient, authSecret));
-        } else {
-            // TODO does identityMapCapacity have an equivalent ?
-            return RegistryClientFactory.create(registryUrl, registryConfigs);
-        }
-    }
-
+    //    @Override
+    //    public SchemaCoder get() {
+    //        //        return new ApicurioSchemaRegistryCoder(
+    //        //                this.subject,
+    //        //                new CachedSchemaRegistryClient(url, identityMapCapacity,
+    //        // registryConfigs));
+    //        //        final String tokenEndpoint = System.getenv("AUTH_TOKEN_ENDPOINT");
+    //        //        if (tokenEndpoint != null) {
+    //        //            final String authClient = System.getenv("AUTH_CLIENT_ID");
+    //        //            final String authSecret = System.getenv("AUTH_CLIENT_SECRET");
+    //        //            Auth auth = new OidcAuth(new JdkHttpClient(tokenEndpoint,
+    //        // Collections.emptyMap(), null, new AuthErrorHandler()), authClient, authSecret);
+    //        //            return RegistryClientFactory.create(new JdkHttpClient(registryUrl,
+    //        // Collections.emptyMap(), auth, new AuthErrorHandler()));
+    //        //        } else {
+    //
+    //        return RegistryClientFactory.create(this.url);
+    //        //        }
+    //
+    //    }
     @Override
     public SchemaCoder get() {
-        //        return new ApicurioSchemaRegistryCoder(
-        //                this.subject,
-        //                new CachedSchemaRegistryClient(url, identityMapCapacity,
-        // registryConfigs));
+        RegistryClientFactory registryClientFactory = new RegistryClientFactory();
+        RegistryClient registryClient =
+                registryClientFactory.create(url, (Map<String, Object>) this.registryConfigs);
 
-        return new ApicurioSchemaRegistryCoder(this.subject, registryClient);
+        return new ApicurioSchemaRegistryCoder(
+                this.subject, registryClient, (Map<String, Object>) this.registryConfigs);
     }
 
     @Override
@@ -104,7 +95,6 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        // TODO COMPARE REGISTRY CLIENT
         CachedSchemaCoderProvider that = (CachedSchemaCoderProvider) o;
         return identityMapCapacity == that.identityMapCapacity
                 && Objects.equals(subject, that.subject)
@@ -114,7 +104,6 @@ class CachedSchemaCoderProvider implements SchemaCoder.SchemaCoderProvider {
 
     @Override
     public int hashCode() {
-        // TODO  REGISTRY CLIENT hash
         return Objects.hash(subject, url, identityMapCapacity, registryConfigs);
     }
 }

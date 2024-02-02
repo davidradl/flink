@@ -22,6 +22,8 @@ import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 
+import io.apicurio.registry.serde.SerdeConfig;
+
 import java.util.Map;
 
 /** Options for Schema Registry Avro format. */
@@ -35,10 +37,47 @@ public class AvroApicurioFormatOptions {
                     .withFallbackKeys("schema-registry.url")
                     .withDescription(
                             "The URL of the Apicurio Schema Registry to fetch/register schemas.");
+
+    public static final ConfigOption<Boolean> ENABLE_HEADERS =
+            ConfigOptions.key(SerdeConfig.ENABLE_HEADERS)
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "Optional flag to indicate that the artifact identifier is in the headers rather than the payload;\n"
+                                    + "false by default.");
+
+    public static final ConfigOption<String> HEADERS_HANDLER =
+            ConfigOptions.key(SerdeConfig.HEADERS_HANDLER)
+                    .stringType()
+                    .defaultValue(SerdeConfig.HEADERS_HANDLER_DEFAULT)
+                    .withDescription(
+                            "Used by serializers and deserializers. Fully-qualified Java classname that implements\n"
+                                    + "HeadersHandler and writes/reads the artifact identifier to/from the Kafka message headers.");
+    public static final ConfigOption<String> ID_HANDLER =
+            ConfigOptions.key(SerdeConfig.ID_HANDLER)
+                    .stringType()
+                    .defaultValue(SerdeConfig.ID_HANDLER_DEFAULT)
+                    .withDescription(
+                            "    Used by serializers and deserializers. Fully-qualified Java classname of a class that implements\n"
+                                    + "IdHandler and writes/reads the artifact identifier to/from the message payload.\n"
+                                    + "Only used if "
+                                    + SerdeConfig.ENABLE_HEADERS
+                                    + " is set to false.");
+
+    public static final ConfigOption<Boolean> ENABLE_CONFLUENT_ID_HANDLER =
+            ConfigOptions.key(SerdeConfig.ENABLE_CONFLUENT_ID_HANDLER)
+                    .booleanType()
+                    .defaultValue(true)
+                    .withDescription(
+                            "Used by serializers and deserializers. Shortcut for enabling the\n "
+                                    + "legacy Confluent-compatible implementation of IdHandler.\n"
+                                    + "Only used if "
+                                    + SerdeConfig.ENABLE_HEADERS
+                                    + " is set to false.");
+
     /*
-    Apicurio Registry URL
+    TODO
      Artifact resolver strategy - default or provided ?
-      ID location
       encoding
       Avro datum provider
       Avro encoding

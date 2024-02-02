@@ -49,7 +49,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
      * @param schema writer's Avro schema. Should be provided if recordClazz is {@link
      *     GenericRecord}
      * @param schemaCoderProvider provider for schema coder that writes the writer schema to
-     *     Confluent Schema Registry
+     *     Apicurio Schema Registry
      */
     private ApicurioRegistryAvroSerializationSchema(
             Class<T> recordClazz,
@@ -60,7 +60,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
 
     /**
      * Creates {@link AvroSerializationSchema} that produces byte arrays that were generated from
-     * Avro schema and writes the writer schema to Confluent Schema Registry.
+     * Avro schema and writes the writer schema to Apicurio Schema Registry.
      *
      * @param tClass the type to be serialized
      * @param subject subject of schema registry to produce
@@ -74,7 +74,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
 
     /**
      * Creates {@link AvroSerializationSchema} that produces byte arrays that were generated from
-     * Avro schema and writes the writer schema to Confluent Schema Registry.
+     * Avro schema and writes the writer schema to Apicurio Schema Registry.
      *
      * @param tClass the type to be serialized
      * @param subject subject of schema registry to produce
@@ -87,7 +87,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
             Class<T> tClass,
             String subject,
             String schemaRegistryUrl,
-            @Nullable Map<String, Object> registryConfigs) {
+            @Nullable Map<String, ?> registryConfigs) {
         return new ApicurioRegistryAvroSerializationSchema<>(
                 tClass,
                 null,
@@ -100,7 +100,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
 
     /**
      * Creates {@link AvroSerializationSchema} that produces byte arrays that were generated from
-     * Avro schema and writes the writer schema to Confluent Schema Registry.
+     * Avro schema and writes the writer schema to Apicurio Schema Registry.
      *
      * @param subject subject of schema registry to produce
      * @param schema schema that will be used for serialization
@@ -114,7 +114,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
 
     /**
      * Creates {@link AvroSerializationSchema} that produces byte arrays that were generated from
-     * Avro schema and writes the writer schema to Confluent Schema Registry.
+     * Avro schema and writes the writer schema to Apicurio Schema Registry.
      *
      * @param subject subject of schema registry to produce
      * @param schema schema that will be used for serialization
@@ -127,7 +127,7 @@ public class ApicurioRegistryAvroSerializationSchema<T> extends RegistryAvroSeri
             String subject,
             Schema schema,
             String schemaRegistryUrl,
-            @Nullable Map<String, Object> registryConfigs) {
+            @Nullable Map<String, ?> registryConfigs) {
         return new ApicurioRegistryAvroSerializationSchema<>(
                 GenericRecord.class,
                 schema,

@@ -13,5 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-org.apache.flink.formats.avro.registry.confluent.RegistryAvroFormatFactory
-org.apache.flink.formats.avro.registry.confluent.debezium.DebeziumAvroFormatFactory
+org.apache.flink.formats.avro.registry.apicurio.ApicurioRegistryAvroFormatFactory

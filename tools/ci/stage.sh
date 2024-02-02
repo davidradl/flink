@@ -99,6 +99,7 @@ flink-formats,\
 flink-formats/flink-format-common,\
 flink-formats/flink-avro-confluent-registry,\
 flink-formats/flink-sql-avro-confluent-registry,\
+flink-formats/flink-avro-apicurio-registry,\
 flink-formats/flink-avro,\
 flink-formats/flink-sql-avro,\
 flink-formats/flink-compress,\
