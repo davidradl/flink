@@ -32,9 +32,6 @@ jobs:
   Update-community-review-labels:
     runs-on: ubuntu-latest
     steps:
-      - run: ls
-      - run: pwd
-      - run: bash .github/workflows/community-review.sh
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
             - name: Check out repository code
              uses: actions/checkout@v4
@@ -42,6 +39,7 @@ jobs:
       - run: echo "🖥️ The workflow is now ready to test your code on the runner."
             - name: List files in the repository
       - run: ls ${{ github.workspace }}
+      - run: ls ${{ github.workspace }}/.github/workflows/community-review.sh
       - run: bash ${{ github.workspace }}/.github/workflows/community-review.sh
       - run: echo "🍏 This job's status is ${{ job.status }}."
 
