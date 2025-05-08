@@ -18,5 +18,5 @@
 ################################################################################
 set -e
 echo "Community rev Script running!"
-env
+echo ${GITHUB_REF_NAME}
 echo "Community rev Script ran!"
