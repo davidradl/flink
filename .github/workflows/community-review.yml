@@ -29,7 +29,7 @@ permissions:
   actions: write
 
 jobs:
-  Update community review labels:
+  Update-community-review-labels:
     runs-on: ubuntu-latest
     steps:
       - run: ./.github/workflows/community-review.sh
