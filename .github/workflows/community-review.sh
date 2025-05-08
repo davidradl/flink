@@ -18,5 +18,5 @@
 ################################################################################
 set -e
 echo "Community rev Script running!"
-echo github.repository is ${github.repository}
+env
 echo "Community rev Script ran!"
