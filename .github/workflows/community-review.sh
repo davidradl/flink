@@ -17,10 +17,4 @@
 # limitations under the License.
 ################################################################################
 set -e
-
-# override env to use Java 17 to for build instead default Java 8
-# path to JDK is taken from https://github.com/apache/flink-connector-shared-utils/blob/ci_utils/docker/base/Dockerfile#L37-L40
-export JAVA_HOME=$JAVA_HOME_17_X64
-export PATH=$JAVA_HOME_17_X64/bin:$PATH
-
-echo Script run!
+echo "Community rev Script run!"
