@@ -21,7 +21,6 @@ description: "Manages community labels"
 
 on:
   pull_request_review:
-  push:
 
 permissions:
   issues: write
