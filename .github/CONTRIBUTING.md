@@ -10,11 +10,4 @@ Please check out the [How to Contribute guide](https://flink.apache.org/contribu
 A detailed explanation can be found in our [Contribute Code Guide](https://flink.apache.org/contributing/contribute-code.html) which also contains a list of coding guidelines that you should follow.
 For pull requests, there is a [check list](PULL_REQUEST_TEMPLATE.md) with criteria taken from the How to Contribute Guide and the Coding Guidelines.
 
-test1
-test2
-3
-4
-5
-6
-7
-8
+9
