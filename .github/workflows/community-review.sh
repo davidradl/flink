@@ -17,4 +17,6 @@
 # limitations under the License.
 ################################################################################
 set -e
-echo "Community rev Script run!"
+echo "Community rev Script running!"
+echo github.repository is ${{ github.repository }}
+echo "Community rev Script ran!"

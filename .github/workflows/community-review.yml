@@ -20,8 +20,8 @@ name: "Community Review"
 description: "Manages community labels"
 
 on:
+  pull_request_review:
   push:
-  workflow_dispatch:
 
 permissions:
   issues: write
@@ -35,9 +35,10 @@ jobs:
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
       - name: Check out repository code
         uses: actions/checkout@v4
+      #- run: echo github.event.review.state
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - run: ls ${{ github.workspace }}/.github/workflows/community-review.sh
+      - name: Make the script executable
+        run: chmod +x ${{ github.workspace }}/.github/workflows/community-review.sh
       - run: bash ${{ github.workspace }}/.github/workflows/community-review.sh
       - run: echo "🍏 This job's status is ${{ job.status }}."
 
