@@ -32,6 +32,7 @@ jobs:
   Update-community-review-labels:
     runs-on: ubuntu-latest
     steps:
-      - run: ./.github/workflows/community-review.sh
+      - run: bash ${GITHUB_WORKSPACE}/.github/workflows/community-review.sh
+      - run: bash .github/workflows/community-review.sh
       - run: echo "🍏 This job's status is ${{ job.status }}."
 
