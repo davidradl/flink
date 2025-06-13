@@ -16,9 +16,9 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-# This script issues paginated graphql calls using the github grapqhQL API to get information about all the PRs
-# input: a parameter that is the git token to use
-# output: a json file called prArray.json that contains an array of node objects representing PRs including the firwt page of their reviews
+# This script issues paginated graphql calls using the github graphQL API to get information about all the PRs
+# input: a parameter that is the git token to use for all curl calls to github
+# output: a json file called prArray.json that contains an array of node objects representing PRs including the first page of their reviews
 
 REPO=apache
 PROJECT=flink
@@ -77,13 +77,11 @@ do
     jq  '.data.repository.pullRequests.edges ' restResponse.json >cutdownrestResponse.json
     hasNextPage=$(cat restResponse.json | jq  '.data.repository.pullRequests.pageInfo.hasNextPage')
     cursor=$(cat restResponse.json | jq  '.data.repository.pullRequests.pageInfo.endCursor')
-
-    echo issued curl got hasNextPage: $hasNextPage and cursor: $cursor
     mv cutdownrestResponse.json response$count.json
    ((++count))
 done
 # merge the arrays
-
+echo Retrieved PR pages is $count
 # we need an expression like this ".[0] + .[1] ...."
 for i in $(seq 0 $count);
 do

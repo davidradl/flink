@@ -33,15 +33,11 @@ do
 
   pr=${line%-*}
   hasNextPage=${line#*-}
-  # Process the line here
-  echo pr number is "$pr"
-  echo hasNextPage is $hasNextPage
   # find the node for our pr
 
   output=$pr.csv
   comma_join_expression="\",\""
-  if [ $hasNextPage = "false" ];
-  then
+  if [ $hasNextPage = "false" ]; then
       jq -r ".[] | select(.node.number==$pr) | .node.timelineItems.nodes | sort_by([.author.login, .createdAt]) | reverse | unique_by(.author.login) | .[] | [.author.login, .state, .createdAt] | join($comma_join_expression)" prArray.json >$output
   else
       ./getAllReviewsForPR.sh $1 $pr

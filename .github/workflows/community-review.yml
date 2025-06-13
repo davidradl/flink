@@ -24,12 +24,11 @@ on:
   schedule:
     - cron: '* * * * *'
 
-# same as stale github action and push to be able to see the collaboration roles
+# same permission as stale github action
 permissions:
   issues: write
   pull-requests: write
   actions: write
-  push: write
 jobs:
   test:
     runs-on: ubuntu-latest

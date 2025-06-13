@@ -56,8 +56,7 @@ count=-1
 while [ "$hasNextPage" = "true" ]
 do
     ((++count))
-    if [[ -n $cursor ]];
-    then
+    if [[ -n $cursor ]]; then
       # remove exiting quotes in the string
       cursor=$(echo $cursor | sed 's/"//g')
       insertCursor=after:\\\\\"$cursor\\\\\",

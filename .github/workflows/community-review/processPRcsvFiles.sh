@@ -44,33 +44,23 @@ do
   do
       echo "Got:$user | $state | $time"
       hasReadRoleReview=false
-      ./isUserRead.sh $1 $user
+      ./isUserCommitter.sh $1 $user
       #see if the user has read role
-      if [ $? == 1 ];
-      then
-         ((++communityReviews))
-         echo $user is a community user
-         if [[ $state = "APPROVED" ]];
-         then
-             ((++communityApproves))
-         fi
+      if [ $? == 1 ]; then
+          if [[ $state = "APPROVED" ]]; then
+                      ((++committerApproves))
+          fi
      else
-         if [[ $state = "APPROVED" ]];
-         then
-             ((++committerApproves))
-         fi
+          ((++communityReviews))
+          if [[ $state = "APPROVED" ]]; then
+             ((++communityApproves))
+          fi
      fi
-     if [[ $state = "CHANGES_REQUESTED" ]];
-     then
+     if [[ $state = "CHANGES_REQUESTED" ]]; then
         ((++requestForChanges))
      fi
-
-
   done < $csv_file
-  echo communityApproves $communityApproves
-  echo requestForChanges $requestForChanges
-  echo committerApproves $committerApproves
-  echo communityReviews $communityReviews
+  echo $pr communityApproves $communityApproves requestForChanges $requestForChanges committerApproves $committerApproves communityReviews $communityReviews
 
   # get rid of suffix starting with . i.e. remove the file type leaving the filename
   pr=${csv_file%.*}
@@ -78,13 +68,11 @@ do
   LGTM_LABEL="community-reviewed-LGTM"
   COMMUNITY_REVIEW_LABEL="community-reviewed"
 
-  if [[ $communityApproves -ge  "2" && $requestForChanges = 0 && $committerApproves = 0 ]];
-  then
+  if [[ $communityApproves -ge  "2" && $requestForChanges = 0 && $committerApproves = 0 ]]; then
      ./mutateLabel.sh $1 $LGTM_LABEL "POST" $pr
      ./mutateLabel.sh $1 $COMMUNITY_REVIEW_LABEL "DELETE" $pr
      echo Set Label $LGTM_LABEL for PR $pr
-  elif [[ communityReviews -ge "0" ]];
-  then
+  elif [[ communityReviews -ge "0" ]]; then
     ./mutateLabel.sh $1 $COMMUNITY_REVIEW_LABEL "POST" $pr
     ./mutateLabel.sh $1 $LGTM_LABEL "DELETE" $pr
     echo Set Label $COMMUNITY_REVIEW_LABEL for PR $pr
