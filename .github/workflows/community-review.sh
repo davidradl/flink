@@ -17,7 +17,7 @@
 # limitations under the License.
 ################################################################################
 #
-# Community review gitaction - sets the community review labels on PRs to show case
+# Community review GitHub Actions - sets the community review labels on PRs to show case
 # community review activity. See Flip-518 for details
 set -e
 
@@ -33,7 +33,7 @@ USER_CACHE_FILENAME="user_cache.txt"
 # =============================================================================
 # Community review script - is passed a github token that it uses for authentication
 # -  gets all of the open PRs from the Flink Github repo. As the API calls have a limit,
-# extra calls will be made to get the rets of the PR pages, and review as required.
+# extra calls will be made to get the rest of the PR pages, and review as required.
 # - For each PR the reviews state and whether the reviewers is the committer decides whether
 # or not a label is applied to PR. The 2 labels that this script can add are:
 #    - community-reviewed-LGTM - set if there have been 2 approves by non-committers, no committer reviews and
@@ -43,7 +43,7 @@ USER_CACHE_FILENAME="user_cache.txt"
 # =============================================================================
 main() {
   local token="${1?missing token}"
-  local GETPRS_TEMPLATE='{
+  local GET_PRS_TEMPLATE='{
   "query":
     "query {
       repository(owner: \"{{REPO_OWNER}}\" name: \"{{REPO_NAME}}\") {
@@ -79,7 +79,8 @@ main() {
     }"
   }'
   # prepare payload template
-  local payloadTemplate=$(echo "$GETPRS_TEMPLATE" | tr -d '\n')  # the query should be a one-liner, without newlines
+  local payloadTemplate
+  payloadTemplate="$(echo "$GET_PRS_TEMPLATE" | tr -d '\n')"  # the query should be a one-liner, without newlines
   payloadTemplate="$(replace_template_value "$payloadTemplate" "REPO_OWNER" "${REPO_OWNER}")"
   payloadTemplate="$(replace_template_value "$payloadTemplate" "REPO_NAME" "${REPO_NAME}")"
   local pullRequests="[]"
@@ -110,7 +111,7 @@ main() {
       echo "- hasNextPage: ${hasNextPage}, cursor: ${cursor}"
   done
 
-  process_each_pr "${token}" "${pullRequests}"
+  process_each_pr "${token}" "${pullRequests}" || exit
   echo "Completed."
 }
 
@@ -128,29 +129,39 @@ main() {
 process_each_pr() {
   local token="${1?missing token}"
   local pullRequests="${2?missing pull requests}"
+  local prNumbersAndPaging
+  local prCount
 
   local token="${1?missing token}"
 
   # get pr numbers list
-  local prNumbersAndPaging="$(jq -jr '.[] |  .node.number, "-",  .node.timelineItems.pageInfo.hasNextPage,"\n"' <<< "$pullRequests")"
+  prNumbersAndPaging="$(jq -jr '.[] |  .node.number, "-",  .node.timelineItems.pageInfo.hasNextPage,"\n"' <<< "$pullRequests")"
+  prCount=$(wc -l <<< "$prNumbersAndPaging" | xargs)
+  local counter=1
 
   # Process each pr separately in a loop
   while IFS= read -r line;
   do
     local pr_number=${line%-*}
     local hasNextPage=${line#*-}
+    
+    printf "\n(%s/%s) PR %s - " "$counter" "$prCount" "$pr_number"
+    
     # find the node for our pr
-    local comma_join_expression="\",\""
     local pr_reviews
-    if [ $hasNextPage = "false" ]; then
-      pr_reviews="$(jq -r ".[] | select(.node.number==$pr_number) | .node.timelineItems.nodes | sort_by([.author.login, .createdAt]) | reverse | unique_by(.author.login) | .[] | [.author.login, .state, .createdAt] | join($comma_join_expression)"  <<< "$pullRequests")"
-      echo non paging pr_reviews $pr_reviews
+    if [ "$hasNextPage" = "false" ]; then
+      all_reviews="$(jq --argjson number "$pr_number" -r '.[] | select(.node.number==$number) | .node.timelineItems.nodes'  <<< "$pullRequests")"
     else
-      pr_reviews="$(get_all_reviews_for_pr $token $pr_number)"
-      echo paging pr_reviews $pr_reviews
+      all_reviews="$(get_all_reviews_for_pr "$token" "$pr_number")" 
     fi
-    process-pr-reviews $token $pr_number "$pr_reviews"
-  done < <(echo -n "$prNumbersAndPaging")
+    # leave only the latest reviews per reviewer in a comma separated form
+    pr_reviewers="$(jq  '. | sort_by([.author.login, .createdAt]) | reverse | unique_by(.author.login) | .[] | [.author.login, .state, .createdAt] | join(",")' <<< "$all_reviews")"
+    
+    printf "Reviews %s Reviewers %s\n" "$(JSONArrayLength "$all_reviews")" "$(wc -l <<< "$pr_reviewers" | xargs)"
+    
+    process_pr_reviews "$token" "$pr_number" "$pr_reviewers" || exit
+    ((counter++))
+  done <<< "$prNumbersAndPaging" || exit
 }
 
 # =============================================================================
@@ -172,7 +183,7 @@ process_each_pr() {
 #   $2 - PR number
 #   $3 - PR reviews
 # =============================================================================
-process-pr-reviews() {
+process_pr_reviews() {
   local token="${1?missing token}"
   local pr_number="${2?missing pr number}"
   local pr_reviews="${3?missing pr reviews}"
@@ -181,17 +192,17 @@ process-pr-reviews() {
   local requestForChanges=0
   local committerApproves=0
   local communityReviews=0
+  local push_permission
   # replace spaces with new lines so the loop will work
   pr_reviews=$(echo "$pr_reviews" | tr ' ' '\n')
   # remove unnecessary double quotes
   pr_reviews="${pr_reviews//\"/}"
 
-  echo pr_reviews prior to the loop $pr_reviews
   while IFS=, read -r user state time
   do
-      echo "Got:$user | $state | $time"
-      local push_permission="$(call_github_get_user_push_permission "$token" "$user")"
-      echo user $user has permission $push_permission
+      printf "%-15s | %-20s | %-20s - checking user permissions..." "$user" "$state" "$time"
+      push_permission=$(call_github_get_user_push_permission "$token" "$user") || exit
+      printf "%s\n" "$push_permission"
 
       #see if the user has read role
 
@@ -205,12 +216,12 @@ process-pr-reviews() {
              ((++communityApproves))
           fi
      fi
-     echo state "$state"
+
      if [ "$state" = "CHANGES_REQUESTED" ]; then
         ((++requestForChanges))
      fi
-  done < <(echo "$pr_reviews")
-  echo $pr communityApproves $communityApproves requestForChanges $requestForChanges committerApproves $committerApproves communityReviews $communityReviews
+  done <<< "$pr_reviews"
+  echo "communityApproves $communityApproves requestForChanges $requestForChanges committerApproves $committerApproves communityReviews $communityReviews"
 
   local label_to_post
   local label_to_delete
@@ -223,8 +234,8 @@ process-pr-reviews() {
   fi
 
   if [ -n "$label_to_post" ]; then
-   call_github_mutate_label_api "$token" "$label_to_post" "POST" "$pr_number"
-   call_github_mutate_label_api "$token" "$label_to_delete" "DELETE" "$pr_number"
+   call_github_mutate_label_api "$token" "$label_to_post" "POST" "$pr_number" || exit
+   call_github_mutate_label_api "$token" "$label_to_delete" "DELETE" "$pr_number" || exit
   fi
 }
 
@@ -252,18 +263,37 @@ get_all_reviews_for_pr() {
 
   local cursor=""
   local hasNextPage="true"
+  local payloadTemplate
+  local cutdownRestResponse
 
-  local GETREVIEWS_TEMPLATE='{
-                            "query":
-                              "query {
-                                repository(owner: \"{{REPO_OWNER}}\" name: \"{{REPO_NAME}}\") {
-       pullRequest(number: {{PR_NUMBER}}) {
-         id
-         number
-         timelineItems(first: 100 {{AFTER_CURSOR}} itemTypes: [PULL_REQUEST_REVIEW] ) {
-                            nodes { ... on PullRequestReview { author { login } state createdAt } } pageInfo { endCursor hasNextPage } } } } }"}'
+  local GET_REVIEWS_TEMPLATE='{
+  "query":
+    "query {
+      repository(owner: \"{{REPO_OWNER}}\" name: \"{{REPO_NAME}}\") {
+        pullRequest(number: {{PR_NUMBER}}) {
+          id
+          number
+          timelineItems(first: 100 {{AFTER_CURSOR}} itemTypes: [PULL_REQUEST_REVIEW] ) {
+            nodes {
+              ... on PullRequestReview {
+                author {
+                  login
+                }
+                state
+                createdAt
+              }
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+          }
+        }
+      }
+    }"
+  }'
 
-  local payloadTemplate=$(echo "$GETREVIEWS_TEMPLATE" | tr -d '\n')  # the query should be a one-liner, without newlines
+  payloadTemplate=$(echo "$GET_REVIEWS_TEMPLATE" | tr -d '\n')  # the query should be a one-liner, without newlines
   payloadTemplate="$(replace_template_value "$payloadTemplate" "REPO_OWNER" "${REPO_OWNER}")"
   payloadTemplate="$(replace_template_value "$payloadTemplate" "REPO_NAME" "${REPO_NAME}")"
   payloadTemplate="$(replace_template_value "$payloadTemplate" "PR_NUMBER" "${pr_number}")"
@@ -280,19 +310,17 @@ get_all_reviews_for_pr() {
     fi
     restResponse="$(call_github_graphql_api "$token" "$payload")"
     check_github_graphql_response "$restResponse"
-    local cutdownrestResponse="$(jq '.data.repository.pullRequest.timelineItems.nodes' <<< "$restResponse")"
+    local cutdownRestResponse
+    cutdownRestResponse="$(jq '.data.repository.pullRequest.timelineItems.nodes' <<< "$restResponse")"
     hasNextPage=$(jq  '.data.repository.pullRequest.timelineItems.pageInfo.hasNextPage' <<< "$restResponse")
     cursor=$(jq  '.data.repository.pullRequest.timelineItems.pageInfo.endCursor' <<< "$restResponse")
     # remove quotes from cursor
     cursor="${cursor//\"/}"
     # append to all reviews into a single json array
-    all_reviews_for_pr=$(echo -e "${all_reviews_for_pr}" "$cutdownrestResponse" | jq '.[]' | jq -s)
+    all_reviews_for_pr=$(echo -e "${all_reviews_for_pr}" "$cutdownRestResponse" | jq '.[]' | jq -s)
   done
-  # leave only the latest reviews per reviewer in a comma separated form
-  all_reviews_for_pr="$(jq  ". | sort_by([.author.login, .createdAt]) | reverse | unique_by(.author.login) | .[] | [.author.login, .state, .createdAt] | join($comma_join_expression)" <<< "$all_reviews_for_pr")"
-  echo $all_reviews_for_pr
+  echo "$all_reviews_for_pr"
 }
-
 
 # ======================================
 # Utility functions
@@ -379,15 +407,16 @@ JSONArrayLength() {
 #    check_github_graphql_response "$restResponse"
 # =============================================================================
 call_github_mutate_label_api() {
-local token="${1?missing token}"
-local labelName="${2?missing label}"
-local operation="${3?missing operation}"
-local prNumber="${4?missing pr number}"
+  local token="${1?missing token}"
+  local labelName="${2?missing label}"
+  local operation="${3?missing operation}"
+  local prNumber="${4?missing pr number}"
 
- curl --fail --no-progress-meter -s \
+  echo "${operation} label: ${labelName}"
+  curl --fail --no-progress-meter -s \
      -H 'Content-Type: application/json' \
      -H "Authorization: bearer $token" \
-     -X $operation -d "{ \"labels\":[\"$labelName\"]}" https://api.github.com/repos/$REPO/$PROJECT/issues/$prNumber/labels
+     -X "$operation" -d "{ \"labels\":[\"${labelName}\"]}" "https://api.github.com/repos/${REPO}/${PROJECT}/issues/${prNumber}/labels"
 }
 
 # =============================================================================
@@ -407,12 +436,13 @@ call_github_get_user_push_permission() {
   local user_name="${2?missing user}"
 
   local file_name=$USER_CACHE_FILENAME
+  local permissions
   local push_permission
   if [ -e "$file_name" ]; then
 
     while IFS=, read -r user_from_file pushperm_from_file
     do
-      if [[ "$user_from_file" = $user_name ]]; then
+      if [[ "$user_from_file" = "$user_name" ]]; then
          push_permission=$pushperm_from_file
          break
       fi
@@ -422,15 +452,17 @@ call_github_get_user_push_permission() {
 
   if [ -z "$push_permission" ]; then
     # not in the cache so get it from github
-    push_permission=$(curl --fail --no-progress-meter \
-        -H "Accept: application/json" \
-        -H "Authorization: Bearer $token"\
-          https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/collaborators/$user_name/permission |  jq -r '.user.permissions.push')
+    permissions=$(curl --fail --no-progress-meter \
+      -H "Accept: application/json" \
+      -H "Authorization: Bearer $token"\
+      "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/collaborators/$user_name/permission") || exit
+    push_permission=$(jq -r '.user.permissions.push' <<< "$permissions")
     # write line to file
     line="$user_name,$push_permission"
     echo "$line">>$file_name
   fi
   # echo out the permissions
-  echo $push_permission
+  echo "$push_permission"
 }
+
 main "$@"
