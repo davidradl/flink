@@ -17,7 +17,7 @@
 # limitations under the License.
 ################################################################################
 #
-# Community review GitHub Actions - sets the community review labels on PRs to show case
+# Community review GitHub Action - sets the community review labels on PRs to show case
 # community review activity. See Flip-518 for details
 set -e
 
@@ -87,6 +87,8 @@ main() {
   local hasNextPage=true
   local cursor=""
   local payload
+  
+  echo "=== Community review GitHub Action ==="
   while [ "$hasNextPage" = "true" ]
   do
       if [[ -n $cursor ]]; then
@@ -100,15 +102,15 @@ main() {
       check_github_graphql_response "$restResponse"
       receivedPullRequests="$(jq '.data.repository.pullRequests.edges' <<< "$restResponse")"    
       
-      echo "- filtering $(JSONArrayLength "$receivedPullRequests") received pull requests..."  
+      printf "Filtering %4s received pull requests... "  "$(JSONArrayLength "$receivedPullRequests")"
       receivedPullRequests=$(jq '[.[] | select((.node.isDraft = false) and (.node.timelineItems.nodes | type != "array" or length > 0))]' <<< "$receivedPullRequests")
-      echo "- after filtering: $(JSONArrayLength "$receivedPullRequests")"
+      printf " %2s PR retained" "$(JSONArrayLength "$receivedPullRequests")"
       
       pullRequests=$(jq --argjson a1 "$pullRequests" --argjson a2 "$receivedPullRequests" '$a1 + $a2' <<< '{}')   
       
       hasNextPage=$(jq  '.data.repository.pullRequests.pageInfo.hasNextPage' <<< "$restResponse")
       cursor=$(jq -r '.data.repository.pullRequests.pageInfo.endCursor' <<< "$restResponse")
-      echo "- hasNextPage: ${hasNextPage}, cursor: ${cursor}"
+      printf " | hasNextPage: %-5s | cursor: %s\n" "${hasNextPage}" "${cursor}"
   done
 
   process_each_pr "${token}" "${pullRequests}" || exit
