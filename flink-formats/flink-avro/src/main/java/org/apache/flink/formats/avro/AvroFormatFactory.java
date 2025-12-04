@@ -25,6 +25,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.formats.avro.AvroFormatOptions.AvroEncoding;
+import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.Projection;
 import org.apache.flink.table.connector.format.DecodingFormat;
@@ -38,13 +39,19 @@ import org.apache.flink.table.factories.DynamicTableFactory;
 import org.apache.flink.table.factories.FactoryUtil;
 import org.apache.flink.table.factories.SerializationFormatFactory;
 import org.apache.flink.table.types.DataType;
+import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
+
+import org.apache.avro.Schema;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
+import static java.lang.String.format;
 import static org.apache.flink.formats.avro.AvroFormatOptions.AVRO_ENCODING;
+import static org.apache.flink.formats.avro.AvroFormatOptions.AVRO_SCHEMA;
 import static org.apache.flink.formats.avro.AvroFormatOptions.AVRO_TIMESTAMP_LEGACY_MAPPING;
 
 /**
@@ -93,14 +100,23 @@ public class AvroFormatFactory implements DeserializationFormatFactory, Serializ
 
         AvroEncoding encoding = formatOptions.get(AVRO_ENCODING);
         boolean legacyTimestampMapping = formatOptions.get(AVRO_TIMESTAMP_LEGACY_MAPPING);
+        Optional<String> schemaString = formatOptions.getOptional(AVRO_SCHEMA);
 
         return new EncodingFormat<SerializationSchema<RowData>>() {
             @Override
             public SerializationSchema<RowData> createRuntimeEncoder(
                     DynamicTableSink.Context context, DataType consumedDataType) {
                 final RowType rowType = (RowType) consumedDataType.getLogicalType();
+                final Schema schema =
+                        schemaString
+                                .map(s -> getAvroSchema(s, rowType, legacyTimestampMapping))
+                                .orElse(
+                                        AvroSchemaConverter.convertToSchema(
+                                                rowType, legacyTimestampMapping));
                 return new AvroRowDataSerializationSchema(
-                        rowType, encoding, legacyTimestampMapping);
+                        rowType,
+                        AvroSerializationSchema.forGeneric(schema, encoding),
+                        RowDataToAvroConverters.createConverter(rowType, legacyTimestampMapping));
             }
 
             @Override
@@ -125,6 +141,26 @@ public class AvroFormatFactory implements DeserializationFormatFactory, Serializ
         Set<ConfigOption<?>> options = new HashSet<>();
         options.add(AVRO_ENCODING);
         options.add(AVRO_TIMESTAMP_LEGACY_MAPPING);
+        options.add(AVRO_SCHEMA);
         return options;
+    }
+
+    private static Schema getAvroSchema(
+            String schemaString, RowType rowType, boolean legacyTimestampMapping) {
+        LogicalType convertedDataType =
+                AvroSchemaConverter.convertToDataType(schemaString).getLogicalType();
+
+        if (convertedDataType.isNullable()) {
+            convertedDataType = convertedDataType.copy(false);
+        }
+
+        if (!convertedDataType.equals(rowType)) {
+            throw new IllegalArgumentException(
+                    format(
+                            "Schema provided for '%s' format does not match the table schema: %s",
+                            IDENTIFIER, schemaString));
+        }
+
+        return new Schema.Parser().parse(schemaString);
     }
 }

@@ -99,6 +99,14 @@ Format Options
       <td>For <a href="{{< ref "docs/connectors/table/filesystem" >}}">Filesystem</a> only, the compression codec for avro. Snappy compression as default. The valid enumerations are: null, deflate, snappy, bzip2, xz.</td>
     </tr>
     <tr>
+      <td><h5>avro.schema</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">(none)</td>
+      <td>String</td>
+      <td>The Avro schema string to use as the writer schema for serialization. If no schema is provided, Flink converts the table schema to Avro schema. The schema provided must match the table schema.</td>
+    </tr>
+    <tr>
       <td><h5>avro.timestamp_mapping.legacy</h5></td>
       <td>optional</td>
       <td>yes</td>
@@ -114,8 +122,9 @@ Format Options
 Data Type Mapping
 ----------------
 
-Currently, the Avro schema is always derived from table schema. Explicitly defining an Avro schema is not supported yet.
-So the following table lists the type mapping from Flink type to Avro type.
+By default, the Avro schema is derived from the table schema. You can optionally provide a custom Avro schema using the `avro.schema` option, which will be used as the writer schema for serialization. The provided schema must match the table schema.
+
+The following table lists the type mapping from Flink type to Avro type.
 
 <table class="table table-bordered">
     <thead>

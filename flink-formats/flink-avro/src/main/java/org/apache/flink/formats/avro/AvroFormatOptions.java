@@ -46,6 +46,15 @@ public class AvroFormatOptions {
                                     + "to represent objects, while JSON offers a more "
                                     + "human-readable option.");
 
+    public static final ConfigOption<String> AVRO_SCHEMA =
+            ConfigOptions.key("schema")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription(
+                            "The Avro schema string to use as the writer schema for serialization. "
+                                    + "If no schema is provided, Flink converts the table schema to Avro schema. "
+                                    + "The schema provided must match the table schema.");
+
     /** Serialization types for Avro encoding, see {@link #AVRO_ENCODING}. */
     public enum AvroEncoding implements DescribedEnum {
         BINARY("binary", text("Use binary encoding for serialization and deserialization.")),
