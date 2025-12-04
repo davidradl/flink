@@ -104,7 +104,7 @@ Format Options
       <td>yes</td>
       <td style="word-wrap: break-word;">(none)</td>
       <td>String</td>
-      <td>The Avro schema string to use as the writer schema for serialization. If no schema is provided, Flink converts the table schema to Avro schema. The schema provided must match the table schema.</td>
+      <td>The Avro schema string to use as the schema for serialization. If no schema is provided, Flink converts the table schema to Avro schema. The schema provided must match the table schema.</td>
     </tr>
     <tr>
       <td><h5>avro.timestamp_mapping.legacy</h5></td>
@@ -122,7 +122,7 @@ Format Options
 Data Type Mapping
 ----------------
 
-By default, the Avro schema is derived from the table schema. You can optionally provide a custom Avro schema using the `avro.schema` option, which will be used as the writer schema for serialization. The provided schema must match the table schema.
+By default, the Avro schema is derived from the table schema. You can optionally provide a custom Avro schema using the `avro.schema` option, which will be used as the schema for serialization. The provided schema must match the table schema.
 
 The following table lists the type mapping from Flink type to Avro type.
 

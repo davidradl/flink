@@ -171,6 +171,148 @@ class AvroFormatFactoryTest {
         assertThat(actualSer).isEqualTo(expectedSer);
     }
 
+    @Test
+    void testSerializationSchemaWithCustomSchema() {
+        final String customSchemaString =
+                "{\n"
+                        + "  \"type\": \"record\",\n"
+                        + "  \"name\": \"test_record\",\n"
+                        + "  \"fields\": [\n"
+                        + "    {\"name\": \"a\", \"type\": [\"null\", \"string\"], \"default\": null},\n"
+                        + "    {\"name\": \"b\", \"type\": [\"null\", \"int\"], \"default\": null},\n"
+                        + "    {\"name\": \"c\", \"type\": [\"null\", \"boolean\"], \"default\": null},\n"
+                        + "    {\"name\": \"d\", \"type\": [\"null\", {\"type\": \"long\", \"logicalType\": \"timestamp-millis\"}], \"default\": null}\n"
+                        + "  ]\n"
+                        + "}";
+
+        final Map<String, String> options = getAllOptions(true);
+        options.put("avro.schema", customSchemaString);
+
+        final DynamicTableSink actualSink = FactoryMocks.createTableSink(SCHEMA, options);
+        assertThat(actualSink).isInstanceOf(TestDynamicTableFactory.DynamicTableSinkMock.class);
+        TestDynamicTableFactory.DynamicTableSinkMock sinkMock =
+                (TestDynamicTableFactory.DynamicTableSinkMock) actualSink;
+
+        SerializationSchema<RowData> actualSer =
+                sinkMock.valueFormat.createRuntimeEncoder(null, SCHEMA.toPhysicalRowDataType());
+
+        // Verify the serializer was created successfully
+        assertThat(actualSer).isNotNull();
+        assertThat(actualSer).isInstanceOf(AvroRowDataSerializationSchema.class);
+    }
+
+    @Test
+    void testSerializationSchemaWithInvalidCustomSchema() {
+        // Schema that doesn't match the table schema (wrong type for field 'b')
+        final String invalidSchemaString =
+                "{\n"
+                        + "  \"type\": \"record\",\n"
+                        + "  \"name\": \"test_record\",\n"
+                        + "  \"fields\": [\n"
+                        + "    {\"name\": \"a\", \"type\": [\"null\", \"string\"], \"default\": null},\n"
+                        + "    {\"name\": \"b\", \"type\": [\"null\", \"string\"], \"default\": null},\n"
+                        + "    {\"name\": \"c\", \"type\": [\"null\", \"boolean\"], \"default\": null},\n"
+                        + "    {\"name\": \"d\", \"type\": [\"null\", {\"type\": \"long\", \"logicalType\": \"timestamp-millis\"}], \"default\": null}\n"
+                        + "  ]\n"
+                        + "}";
+
+        final Map<String, String> options = getAllOptions(true);
+        options.put("avro.schema", invalidSchemaString);
+
+        final DynamicTableSink actualSink = FactoryMocks.createTableSink(SCHEMA, options);
+        TestDynamicTableFactory.DynamicTableSinkMock sinkMock =
+                (TestDynamicTableFactory.DynamicTableSinkMock) actualSink;
+
+        assertThatThrownBy(
+                        () ->
+                                sinkMock.valueFormat.createRuntimeEncoder(
+                                        null, SCHEMA.toPhysicalRowDataType()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(
+                        "Schema provided for 'avro' format does not match the table schema");
+    }
+
+    @Test
+    void testCustomSchemaNotUsedForDeserialization() {
+        final String customSchemaString =
+                "{\n"
+                        + "  \"type\": \"record\",\n"
+                        + "  \"name\": \"test_record\",\n"
+                        + "  \"fields\": [\n"
+                        + "    {\"name\": \"a\", \"type\": [\"null\", \"string\"], \"default\": null},\n"
+                        + "    {\"name\": \"b\", \"type\": [\"null\", \"int\"], \"default\": null},\n"
+                        + "    {\"name\": \"c\", \"type\": [\"null\", \"boolean\"], \"default\": null},\n"
+                        + "    {\"name\": \"d\", \"type\": [\"null\", {\"type\": \"long\", \"logicalType\": \"timestamp-millis\"}], \"default\": null}\n"
+                        + "  ]\n"
+                        + "}";
+
+        final Map<String, String> options = getAllOptions(true);
+        options.put("avro.schema", customSchemaString);
+
+        // Create deserializer - should ignore the custom schema
+        final AvroRowDataDeserializationSchema expectedDeser =
+                new AvroRowDataDeserializationSchema(
+                        ROW_TYPE, InternalTypeInfo.of(ROW_TYPE), AvroEncoding.BINARY);
+
+        final DynamicTableSource actualSource = FactoryMocks.createTableSource(SCHEMA, options);
+        assertThat(actualSource).isInstanceOf(TestDynamicTableFactory.DynamicTableSourceMock.class);
+        TestDynamicTableFactory.DynamicTableSourceMock scanSourceMock =
+                (TestDynamicTableFactory.DynamicTableSourceMock) actualSource;
+
+        DeserializationSchema<RowData> actualDeser =
+                scanSourceMock.valueFormat.createRuntimeDecoder(
+                        ScanRuntimeProviderContext.INSTANCE, SCHEMA.toPhysicalRowDataType());
+
+        // Verify deserializer uses table schema, not custom schema
+        assertThat(actualDeser).isEqualTo(expectedDeser);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testCustomSchemaWithTimestampMapping(boolean legacyTimestampMapping) {
+        final String customSchemaString;
+        if (legacyTimestampMapping) {
+            customSchemaString =
+                    "{\n"
+                            + "  \"type\": \"record\",\n"
+                            + "  \"name\": \"test_record\",\n"
+                            + "  \"fields\": [\n"
+                            + "    {\"name\": \"a\", \"type\": [\"null\", \"string\"], \"default\": null},\n"
+                            + "    {\"name\": \"b\", \"type\": [\"null\", \"int\"], \"default\": null},\n"
+                            + "    {\"name\": \"c\", \"type\": [\"null\", \"boolean\"], \"default\": null},\n"
+                            + "    {\"name\": \"d\", \"type\": [\"null\", {\"type\": \"long\", \"logicalType\": \"timestamp-millis\"}], \"default\": null}\n"
+                            + "  ]\n"
+                            + "}";
+        } else {
+            customSchemaString =
+                    "{\n"
+                            + "  \"type\": \"record\",\n"
+                            + "  \"name\": \"test_record\",\n"
+                            + "  \"fields\": [\n"
+                            + "    {\"name\": \"a\", \"type\": [\"null\", \"string\"], \"default\": null},\n"
+                            + "    {\"name\": \"b\", \"type\": [\"null\", \"int\"], \"default\": null},\n"
+                            + "    {\"name\": \"c\", \"type\": [\"null\", \"boolean\"], \"default\": null},\n"
+                            + "    {\"name\": \"d\", \"type\": [\"null\", {\"type\": \"long\", \"logicalType\": \"local-timestamp-millis\"}], \"default\": null}\n"
+                            + "  ]\n"
+                            + "}";
+        }
+
+        final Map<String, String> options = getAllOptions(legacyTimestampMapping);
+        options.put("avro.schema", customSchemaString);
+
+        final DynamicTableSink actualSink = FactoryMocks.createTableSink(SCHEMA, options);
+        assertThat(actualSink).isInstanceOf(TestDynamicTableFactory.DynamicTableSinkMock.class);
+        TestDynamicTableFactory.DynamicTableSinkMock sinkMock =
+                (TestDynamicTableFactory.DynamicTableSinkMock) actualSink;
+
+        SerializationSchema<RowData> actualSer =
+                sinkMock.valueFormat.createRuntimeEncoder(null, SCHEMA.toPhysicalRowDataType());
+
+        // Verify the serializer was created successfully with correct timestamp mapping
+        assertThat(actualSer).isNotNull();
+        assertThat(actualSer).isInstanceOf(AvroRowDataSerializationSchema.class);
+    }
+
     // ------------------------------------------------------------------------
     //  Utilities
     // ------------------------------------------------------------------------
